@@ -20,13 +20,13 @@ object DummyProducer extends ZIOAppDefault {
       value <- Random.shuffle(values).map(_.head)
       record = new ProducerRecord(topic, key, value)
       result <- Producer.produce(record, Serde.string, Serde.string)
-      _      <- ZIO.log(s"produced message offset ${result.offset()}")
+      _      <- ZIO.log(s"produced message, offset ${result.offset()}")
       _      <- ZIO.sleep(1.second)
     } yield ()
 
     produce.forever
   }
 
-  override def run = program.provideLayer(producer)
+  override def run: Task[Nothing] = program.provideLayer(producer)
 
 }
