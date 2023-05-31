@@ -10,6 +10,7 @@ object Dependencies {
   val `tapir-core`              = "com.softwaremill.sttp.tapir" %% "tapir-core"              % "1.4.0"
   val `tapir-zio`               = "com.softwaremill.sttp.tapir" %% "tapir-zio"               % "1.4.0"
   val `tapir-http4s-server-zio` = "com.softwaremill.sttp.tapir" %% "tapir-http4s-server-zio" % "1.4.0"
+  val `http4s-blaze-server`     = "org.http4s"                  %% "http4s-blaze-server"     % "0.23.14"
 
   val all: Seq[ModuleID] = Seq(
     zio,
@@ -20,6 +21,7 @@ object Dependencies {
     `zio-config-magnolia`,
     `tapir-core`,
     `tapir-zio`,
-    `tapir-http4s-server-zio`
+    `tapir-http4s-server-zio`,
+    `http4s-blaze-server`
   )
 }
