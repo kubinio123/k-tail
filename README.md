@@ -6,7 +6,11 @@ library.  I encourage you to read the posts first.
 
 * Part one, covers basic of _ZIO_ effects, streams and layers - TODO link
 
-## Run it
+### Overview
+
+![k-tail-overview](k-tail-overview.jpg)
+
+### Run it
 
 I assume `sbt` is installed on your OS.
 
