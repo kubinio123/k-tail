@@ -17,9 +17,9 @@ case class BroadcastImpl(subscribers: TMap[String, Int], hubs: TMap[String, THub
         case _             => Some(1)
       }
       (hub, message) <- hubs.get(topic).flatMap {
-        case Some(hub) => STM.succeed((hub, s"subscribe to existing $topic topic hub, ${counter.get} subscriber(s)"))
+        case Some(hub) => STM.succeed((hub, s"subscribe to $topic topic hub, ${counter.get} subscriber(s)"))
         case _ =>
-          THub.unbounded[Message].tap(hubs.put(topic, _)).map((_, s"subscribe to new topic $topic, hub created"))
+          THub.unbounded[Message].tap(hubs.put(topic, _)).map((_, s"subscribe to topic $topic, hub created"))
       }
       dequeue <- hub.subscribe
     } yield (dequeue, message)).commit.flatMap { case (dequeue, message) => ZIO.logInfo(message).as(dequeue) }
