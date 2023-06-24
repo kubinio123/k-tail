@@ -5,8 +5,8 @@ import zio.stm.{ STM, TDequeue, THub, TMap }
 import zio.stream.{ ZSink, ZStream }
 
 trait Broadcast {
-  def subscribe(topic: String): Task[TDequeue[Message]]
-  def unsubscribe(topic: String): UIO[Unit]
+  def subscribe(topic: String): Task[TDequeue[Message]] // ZIO[Any, Throwable, TDequeue[Message]]
+  def unsubscribe(topic: String): UIO[Unit] // ZIO[Any, Nothing, Unit]
 }
 
 case class BroadcastImpl(subscribers: TMap[String, Int], hubs: TMap[String, THub[Message]]) extends Broadcast {
