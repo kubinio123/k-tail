@@ -11,8 +11,8 @@ import sttp.tapir.server.http4s.ztapir.ZHttp4sServerInterpreter
 import sttp.tapir.ztapir.*
 import sttp.ws.WebSocketFrame
 import zio.*
-import zio.json.*
 import zio.interop.catz.*
+import zio.json.*
 import zio.stream.{ Stream, ZStream }
 
 import scala.concurrent.ExecutionContext
@@ -46,17 +46,18 @@ final case class ServerImpl(
         dequeue  <- broadcast.subscribe(topic)
         control = in.collectZIO {
           case WebSocketFrame.Ping(bytes) =>
-            ZIO.succeed(WebSocketFrame.Pong(bytes): WebSocketFrame)
+            ZIO.succeed(WebSocketFrame.Pong(bytes))
           case close @ WebSocketFrame.Close(_, _) =>
             isClosed
               .succeed(())
               .zipLeft(broadcast.unsubscribe(topic))
-              .as(close: WebSocketFrame)
+              .as(close)
         }
-        messages =
-          ZStream
-            .fromTQueue(dequeue)
-            .map(msg => WebSocketFrame.text(msg.toJson): WebSocketFrame)
+
+        messages = ZStream
+          .fromTQueue(dequeue)
+          .map(msg => WebSocketFrame.text(msg.toJson))
+
         frames = messages.merge(control).interruptWhen(isClosed)
       } yield frames
 
