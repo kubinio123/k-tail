@@ -4,7 +4,9 @@ The app is a web socket server for broadcasting kafka messages for some preconfi
 It's built for the educational purpose of a blog post series about programming with _ZIO_
 library.  I encourage you to read the posts first.
 
-* Part one, covers basic of _ZIO_ effects, streams and layers - TODO link
+* Part one, covers basic of _ZIO_ effects, streams and layers - [link](zio.config.typesafe.*
+  )
+* Part two, covers basics of concurrency and web sockets handling - TODO link
 
 ### Overview
 
