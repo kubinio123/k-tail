@@ -22,7 +22,7 @@ case class BroadcastImpl(
     } yield (subscribers, dequeue)
 
     subscribe.commit.flatMap { case (subscribers, dequeue) =>
-      ZIO.logInfo(s"Topic $topic has $subscribers subscriber(s)").as(dequeue)
+      ZIO.logInfo(s"topic $topic has $subscribers subscriber(s)").as(dequeue)
     }
   }
 
@@ -47,7 +47,7 @@ case class BroadcastImpl(
     } yield subscribers
 
     unsubscribe.commit.flatMap(subscribers =>
-      ZIO.logInfo(s"Topic $topic has ${subscribers.getOrElse(0)} subscriber(s)")
+      ZIO.logInfo(s"topic $topic has ${subscribers.getOrElse(0)} subscriber(s)")
     )
   }
 
