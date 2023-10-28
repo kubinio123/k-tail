@@ -7,8 +7,8 @@ import zio.*
 
 object KTail {
 
-  val live: RLayer[Scope & KTailConfig & SttpClient, Unit] =
-    ZLayer {
+  val live: RLayer[KTailConfig & SttpClient, Unit] =
+    ZLayer.scoped {
       ZIO
         .acquireRelease(
           for {
@@ -21,7 +21,7 @@ object KTail {
               .repeatUntil(_.code.isSuccess)
             _ <- ZIO.logInfo(s"k-tail started on port ${config.port}")
           } yield program
-        )(_.interrupt)
+        )(program => program.interrupt *> ZIO.logInfo("k-tail stopped"))
         .unit
     }
 }

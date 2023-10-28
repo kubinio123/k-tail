@@ -12,7 +12,8 @@ object Main extends ZIOAppDefault {
 
   def program(config: TaskLayer[KTailConfig]): Task[ExitCode] =
     (for {
-      _     <- KTailConsumer.consume.fork
+      consume <- KTailConsumer.consume
+      _ <- consume.mapZIO(Buffer.offer).run(ZSink.drain).forkDaemon
       serve <- Server.serve
     } yield serve).provide(
       config,
