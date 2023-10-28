@@ -7,17 +7,17 @@ import zio.kafka.serde.Serde
 import zio.stream.*
 
 trait KTailConsumer {
-  // ZStream[Any, Throwable, Message]
-  val consume: Stream[Throwable, Message]
+  // ZIO[Any, Throwable, Unit]
+  val consume: Task[Unit]
 }
 
 object KTailConsumer {
-  val consume: URIO[KTailConsumer, Stream[Throwable, Message]] =
+  val consume: URIO[KTailConsumer, Task[Unit]] =
     ZIO.serviceWith[KTailConsumer](_.consume)
 }
 
-final case class KTailConsumerImpl(topics: Set[String], consumer: Consumer) extends KTailConsumer {
-  override val consume: Stream[Throwable, Message] =
+final case class KTailConsumerImpl(topics: Set[String], consumer: Consumer, buffer: Buffer) extends KTailConsumer {
+  override val consume: Task[Unit] =
     consumer
       .plainStream[Any, Array[Byte], Array[Byte]](Topics(topics), Serde.byteArray, Serde.byteArray)
       .map(record =>
@@ -29,11 +29,13 @@ final case class KTailConsumerImpl(topics: Set[String], consumer: Consumer) exte
           record.value
         )
       )
+      .mapZIO(buffer.offer)
+      .run(ZSink.drain)
 }
 
 object KTailConsumerImpl {
-  // ZLayer[KTailConfig, Throwable, KTailConsumerImpl]
-  val live: RLayer[KTailConfig, KTailConsumerImpl] =
+  // ZLayer[KTailConfig & Buffer, Throwable, KTailConsumerImpl]
+  val live: RLayer[KTailConfig & Buffer, KTailConsumerImpl] =
     ZLayer.scoped {
       for {
         config <- ZIO.service[KTailConfig]
@@ -42,6 +44,7 @@ object KTailConsumerImpl {
           ConsumerSettings(config.bootstrapServers)
             .withGroupId(config.groupId)
         )
-      } yield KTailConsumerImpl(topics, consumer)
+        buffer <- ZIO.service[Buffer]
+      } yield KTailConsumerImpl(topics, consumer, buffer)
     }
 }

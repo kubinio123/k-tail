@@ -12,6 +12,12 @@ object Dependencies {
   val `tapir-zio`               = "com.softwaremill.sttp.tapir" %% "tapir-zio"               % "1.4.0"
   val `tapir-http4s-server-zio` = "com.softwaremill.sttp.tapir" %% "tapir-http4s-server-zio" % "1.4.0"
   val `http4s-blaze-server`     = "org.http4s"                  %% "http4s-blaze-server"     % "0.23.14"
+  // test
+  val `zio-test`                   = "dev.zio"                       %% "zio-test"                   % "2.0.10"  % Test
+  val `zio-test-sbt`               = "dev.zio"                       %% "zio-test-sbt"               % "2.0.10"  % Test
+  val `zio-test-magnolia`          = "dev.zio"                       %% "zio-test-magnolia"          % "2.0.10"  % Test
+  val `testcontainers-scala-kafka` = "com.dimafeng"                  %% "testcontainers-scala-kafka" % "0.40.12" % Test
+  val `sttp-client3-zio`           = "com.softwaremill.sttp.client3" %% "zio"                        % "3.9.0"   % Test
 
   val all: Seq[ModuleID] = Seq(
     zio,
@@ -24,6 +30,11 @@ object Dependencies {
     `tapir-core`,
     `tapir-zio`,
     `tapir-http4s-server-zio`,
-    `http4s-blaze-server`
+    `http4s-blaze-server`,
+    `zio-test`,
+    `zio-test-sbt`,
+    `zio-test-magnolia`,
+    `testcontainers-scala-kafka`,
+    `sttp-client3-zio`
   )
 }

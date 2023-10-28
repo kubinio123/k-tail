@@ -1,6 +1,7 @@
 package ktail
 
-import org.http4s.HttpRoutes
+import cats.syntax.all.*
+import org.http4s.*
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.server.Router
 import org.http4s.server.websocket.WebSocketBuilder2
@@ -30,6 +31,9 @@ final case class ServerImpl(
     broadcast: Broadcast,
     ec: ExecutionContext
 ) extends Server {
+
+  private val healthEndpoint: ZServerEndpoint[Any, Any] =
+    endpoint.get.in("k-tail" / "health").zServerLogic(_ => ZIO.unit)
 
   private val kTailSocket: ZServerEndpoint[Any, ZioStreams & WebSockets] =
     endpoint.get
@@ -64,6 +68,9 @@ final case class ServerImpl(
       ZStream.unwrap(out)
     }
 
+  private val healthRoutes: HttpRoutes[Task] =
+    ZHttp4sServerInterpreter().from(healthEndpoint).toRoutes
+
   private val webSocketRoutes: WebSocketBuilder2[Task] => HttpRoutes[Task] =
     ZHttp4sServerInterpreter().fromWebSocket(kTailSocket).toRoutes
 
@@ -71,7 +78,7 @@ final case class ServerImpl(
     BlazeServerBuilder[Task]
       .withExecutionContext(ec)
       .bindHttp(port, "localhost")
-      .withHttpWebSocketApp(wsb => Router("/" -> webSocketRoutes(wsb)).orNotFound)
+      .withHttpWebSocketApp(wsb => Router("/" -> healthRoutes.combineK(webSocketRoutes(wsb))).orNotFound)
       .serve
       .compile
       .drain

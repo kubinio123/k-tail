@@ -10,19 +10,17 @@ object Main extends ZIOAppDefault {
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.setConfigProvider(ConfigProvider.fromResourcePath())
 
-  private val program: RIO[KTailConsumer & Buffer & Server, ExitCode] =
-    for {
-      consume <- KTailConsumer.consume
-      _       <- consume.mapZIO(Buffer.offer).run(ZSink.drain).forkDaemon
-      serve   <- Server.serve
-    } yield serve
-
-  override def run: Task[ExitCode] = program
-    .provide(
-      KTailConfig.live,
-      BufferImpl.live,
+  def program(config: TaskLayer[KTailConfig]): Task[ExitCode] =
+    (for {
+      _     <- KTailConsumer.consume.fork
+      serve <- Server.serve
+    } yield serve).provide(
+      config,
       KTailConsumerImpl.live,
-      ServerImpl.live,
-      BroadcastImpl.live
+      BufferImpl.live,
+      BroadcastImpl.live,
+      ServerImpl.live
     )
+
+  override def run: Task[ExitCode] = program(KTailConfig.live)
 }
