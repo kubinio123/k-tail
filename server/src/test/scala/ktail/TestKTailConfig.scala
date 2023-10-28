@@ -5,6 +5,10 @@ import zio.*
 
 object TestKTailConfig {
 
+  val Topic1: String = "test-topic-1"
+  val Topic2: String = "test-topic-2"
+  val Topic3: String = "test-topic-3"
+
   val live: URLayer[KafkaContainer, KTailConfig] =
     ZLayer {
       for {
@@ -15,7 +19,7 @@ object TestKTailConfig {
           port = port,
           bootstrapServers = bootstrapServers,
           groupId = "k-tail-server-test",
-          topics = List("test-topic-1", "test-topic-2")
+          topics = List(Topic1, Topic2, Topic3)
         )
       } yield config
     }
