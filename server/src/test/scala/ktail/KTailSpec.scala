@@ -38,8 +38,8 @@ object KTailSpec extends ZIOSpecDefault {
       },
       test("broadcast kafka messages, multiple clients") {
         for {
-          socketsTopic2  <- ZIO.foreachPar(1 to 20)(_ => subscribe(Topic2))
-          socketsTopic3  <- ZIO.foreachPar(1 to 20)(_ => subscribe(Topic3))
+          socketsTopic2  <- ZIO.foreachPar(1 to 100)(_ => subscribe(Topic2))
+          socketsTopic3  <- ZIO.foreachPar(1 to 100)(_ => subscribe(Topic3))
           _              <- produce(Topic2, numberOfMessages = 200)
           _              <- produce(Topic3, numberOfMessages = 200)
           messagesTopic2 <- ZIO.foreachPar(socketsTopic2)(receive(_, numberOfMessages = 200))
