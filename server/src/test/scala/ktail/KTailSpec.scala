@@ -10,6 +10,7 @@ import zio.json.*
 import zio.kafka.producer.{ Producer, ProducerSettings }
 import zio.kafka.serde.Serde
 import zio.test.*
+import zio.test.Assertion.{ assertion, equalTo, forall }
 
 object KTailSpec extends ZIOSpecDefault {
 
@@ -32,9 +33,8 @@ object KTailSpec extends ZIOSpecDefault {
           socket   <- subscribe(Topic1)
           _        <- produce(Topic1, numberOfMessages = 10)
           messages <- receive(socket, numberOfMessages = 10)
-        } yield assertTrue {
-          messages.map(_.topic).forall(_ == Topic1) && messages.map(_.offset) == (0L to 10)
-        }
+        } yield assert(messages.map(_.topic))(forall(equalTo(Topic1))) &&
+          assertTrue(messages.map(_.offset) == (0L to 9))
       },
       test("broadcast kafka messages, multiple clients") {
         for {
@@ -44,12 +44,10 @@ object KTailSpec extends ZIOSpecDefault {
           _              <- produce(Topic3, numberOfMessages = 200)
           messagesTopic2 <- ZIO.foreachPar(socketsTopic2)(receive(_, numberOfMessages = 200))
           messagesTopic3 <- ZIO.foreachPar(socketsTopic3)(receive(_, numberOfMessages = 200))
-        } yield assertTrue {
-          messagesTopic2.forall(m => m.map(_.topic).forall(_ == Topic2)) &&
-          messagesTopic2.forall(m => m.map(_.offset) == (0L to 200)) &&
-          messagesTopic3.forall(m => m.map(_.topic).forall(_ == Topic3)) &&
-          messagesTopic3.forall(m => m.map(_.offset) == (0L to 200))
-        }
+        } yield matchTopic(messagesTopic2, Topic2) &&
+        matchOffsets(messagesTopic2, 0L to 199) &&
+        matchTopic(messagesTopic3, Topic3) &&
+        matchOffsets(messagesTopic3, 0L to 199)
       }
     ).provideSomeShared[Scope](
       KTail.live,
@@ -83,13 +81,13 @@ object KTailSpec extends ZIOSpecDefault {
   private def produce(topic: String, numberOfMessages: Int): RIO[Producer, Unit] =
     for {
       producer <- ZIO.service[Producer]
-      _ <- producer.produce(topic, key = "1", value = "msg", Serde.string, Serde.string).repeatN(numberOfMessages)
+      _ <- producer.produce(topic, key = "1", value = "msg", Serde.string, Serde.string).repeatN(numberOfMessages - 1)
     } yield ()
 
   private def receive(socket: WebSocket[Task], numberOfMessages: Int): Task[List[Message]] =
     for {
       received <- Queue.unbounded[WebSocketFrame]
-      _        <- socket.receive().flatMap(received.offer).repeatN(numberOfMessages)
+      _        <- socket.receive().flatMap(received.offer).repeatN(numberOfMessages - 1)
       _        <- socket.close()
       frames   <- received.takeAll
       messages <- decode(frames)
@@ -106,4 +104,10 @@ object KTailSpec extends ZIOSpecDefault {
         }
         .toList
     }
+
+  private def matchTopic(messages: Iterable[List[Message]], topic: String): TestResult =
+    assert(messages.map(_.map(_.topic)))(forall(forall(equalTo(topic))))
+
+  private def matchOffsets(messages: Iterable[List[Message]], offsets: Iterable[Long]): TestResult =
+    assert(messages.map(_.map(_.offset)))(forall(equalTo(offsets)))
 }
