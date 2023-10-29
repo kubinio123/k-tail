@@ -38,16 +38,18 @@ object KTailSpec extends ZIOSpecDefault {
       },
       test("broadcast kafka messages, multiple clients") {
         for {
-          socketsTopic2  <- ZIO.foreachPar(1 to 100)(_ => subscribe(Topic2))
-          socketsTopic3  <- ZIO.foreachPar(1 to 100)(_ => subscribe(Topic3))
-          _              <- produce(Topic2, numberOfMessages = 200)
-          _              <- produce(Topic3, numberOfMessages = 200)
-          messagesTopic2 <- ZIO.foreachPar(socketsTopic2)(receive(_, numberOfMessages = 200))
-          messagesTopic3 <- ZIO.foreachPar(socketsTopic3)(receive(_, numberOfMessages = 200))
+          socketsTopic2 <- ZIO.foreachPar(1 to 100)(_ => subscribe(Topic2))
+          socketsTopic3 <- ZIO.foreachPar(1 to 100)(_ => subscribe(Topic3))
+          _             <- produce(Topic2, numberOfMessages = 200)
+          _             <- produce(Topic3, numberOfMessages = 200)
+          messagesTopic2 <-
+            ZIO.foreachPar(socketsTopic2)(receive(_, numberOfMessages = 200))
+          messagesTopic3 <-
+            ZIO.foreachPar(socketsTopic3)(receive(_, numberOfMessages = 200))
         } yield matchTopic(messagesTopic2, Topic2) &&
-        matchOffsets(messagesTopic2, 0L to 199) &&
-        matchTopic(messagesTopic3, Topic3) &&
-        matchOffsets(messagesTopic3, 0L to 199)
+          matchOffsets(messagesTopic2, 0L to 199) &&
+          matchTopic(messagesTopic3, Topic3) &&
+          matchOffsets(messagesTopic3, 0L to 199)
       }
     ).provideSomeShared[Scope](
       KTail.live,
@@ -55,19 +57,20 @@ object KTailSpec extends ZIOSpecDefault {
       TestKafkaContainer.live,
       TestProducer.live,
       HttpClientZioBackend.layer()
-    ) @@ TestAspect.debug
+    ) @@ TestAspect.timeout(1.minute)
 
   private def subscribe(topic: String): RIO[KTailConfig & SttpClient, WebSocket[Task]] =
     for {
       config <- ZIO.service[KTailConfig]
       sttp   <- ZIO.service[SttpClient]
-      ws <- sttp
-        .send(
-          basicRequest
-            .get(uri"ws://localhost:${config.port}/k-tail/$topic")
-            .response(asWebSocketAlwaysUnsafe[Task])
-        )
-        .map(_.body)
+      ws <-
+        sttp
+          .send(
+            basicRequest
+              .get(uri"ws://localhost:${config.port}/k-tail/$topic")
+              .response(asWebSocketAlwaysUnsafe[Task])
+          )
+          .map(_.body)
       _ <- ping(ws) *> ws.receive()
     } yield ws
 
@@ -81,13 +84,23 @@ object KTailSpec extends ZIOSpecDefault {
   private def produce(topic: String, numberOfMessages: Int): RIO[Producer, Unit] =
     for {
       producer <- ZIO.service[Producer]
-      _ <- producer.produce(topic, key = "1", value = "msg", Serde.string, Serde.string).repeatN(numberOfMessages - 1)
+      _ <-
+        producer
+          .produce(topic, key = "1", value = "msg", Serde.string, Serde.string)
+          .repeatN(numberOfMessages - 1)
     } yield ()
 
-  private def receive(socket: WebSocket[Task], numberOfMessages: Int): Task[List[Message]] =
+  private def receive(
+      socket: WebSocket[Task],
+      numberOfMessages: Int
+  ): Task[List[Message]] =
     for {
       received <- Queue.unbounded[WebSocketFrame]
-      _        <- socket.receive().flatMap(received.offer).repeatN(numberOfMessages - 1)
+      _ <-
+        socket
+          .receive()
+          .flatMap(received.offer)
+          .repeatN(numberOfMessages - 1)
       _        <- socket.close()
       frames   <- received.takeAll
       messages <- decode(frames)
