@@ -32,7 +32,9 @@ object KTailSpec extends ZIOSpecDefault {
           socket   <- subscribe(Topic1)
           _        <- produce(Topic1, numberOfMessages = 10)
           messages <- receive(socket, numberOfMessages = 10)
-        } yield assert(messages.map(_.offset))(Assertion.equalTo(0L to 10))
+        } yield assertTrue {
+          messages.map(_.topic).forall(_ == Topic1) && messages.map(_.offset) == (0L to 10)
+        }
       },
       test("broadcast kafka messages, multiple clients") {
         for {
@@ -43,8 +45,10 @@ object KTailSpec extends ZIOSpecDefault {
           messagesTopic2 <- ZIO.foreachPar(socketsTopic2)(receive(_, numberOfMessages = 200))
           messagesTopic3 <- ZIO.foreachPar(socketsTopic3)(receive(_, numberOfMessages = 200))
         } yield assertTrue {
-          messagesTopic2.forall(messages => messages.map(_.offset) == (0L to 200)) &&
-          messagesTopic3.forall(messages => messages.map(_.offset) == (0L to 200))
+          messagesTopic2.forall(m => m.map(_.topic).forall(_ == Topic2)) &&
+          messagesTopic2.forall(m => m.map(_.offset) == (0L to 200)) &&
+          messagesTopic3.forall(m => m.map(_.topic).forall(_ == Topic3)) &&
+          messagesTopic3.forall(m => m.map(_.offset) == (0L to 200))
         }
       }
     ).provideSomeShared[Scope](
