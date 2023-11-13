@@ -23,5 +23,5 @@ final case class BufferImpl(queue: Queue[Message]) extends Buffer {
 }
 
 object BufferImpl {
-  val live: ULayer[BufferImpl] = ZLayer(Queue.unbounded[Message].map(BufferImpl(_)))
+  val live: ULayer[Buffer] = ZLayer(Queue.unbounded[Message].map(BufferImpl(_)))
 }

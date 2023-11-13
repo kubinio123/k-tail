@@ -60,7 +60,7 @@ case class BroadcastImpl(
 }
 
 object BroadcastImpl {
-  val live: URLayer[Buffer, BroadcastImpl] =
+  val live: URLayer[Buffer, Broadcast] =
     ZLayer {
       for {
         subscribers <- TMap.empty[String, Int].commit

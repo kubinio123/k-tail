@@ -86,7 +86,7 @@ final case class ServerImpl(
 }
 
 object ServerImpl {
-  val live: URLayer[KTailConfig & Broadcast, ServerImpl] =
+  val live: URLayer[KTailConfig & Broadcast, Server] =
     ZLayer {
       for {
         port      <- ZIO.serviceWith[KTailConfig](_.port)

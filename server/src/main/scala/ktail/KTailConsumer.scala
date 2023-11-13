@@ -32,8 +32,8 @@ final case class KTailConsumerImpl(topics: Set[String], consumer: Consumer) exte
 }
 
 object KTailConsumerImpl {
-  // ZLayer[KTailConfig, Throwable, KTailConsumerImpl]
-  val live: RLayer[KTailConfig, KTailConsumerImpl] =
+  // ZLayer[KTailConfig, Throwable, KTailConsumer]
+  val live: RLayer[KTailConfig, KTailConsumer] =
     ZLayer.scoped {
       for {
         config <- ZIO.service[KTailConfig]
